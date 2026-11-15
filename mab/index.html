@@ -100,7 +100,9 @@ tr.pick{cursor:pointer} tr.pick:hover td{background:var(--accent-soft)} tr.sel t
 .stars button{width:38px;height:38px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700}
 .stars button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .split{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:900px){.split{grid-template-columns:1fr}}
+@media (max-width:900px){.split{grid-template-columns:minmax(0,1fr)}}
+.split>*{min-width:0}
+.card{min-width:0}
 details summary{cursor:pointer;font-weight:600}
 .err{color:var(--bad-ink);font-weight:600}
 .subtabs{display:flex;gap:6px;flex-wrap:wrap}
@@ -422,7 +424,7 @@ function rng(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a
 let S=null, MSG="", NET="";
 let DB=null, MODE="boot", READY={rep:false,cfg:false}, EMPTY=false, CANWRITE=null, DEFER=false, BUSY=false;
 let OKMSG="", SAVE="", LIMIT=false, FIRSTCFG=true, LASTREP=null, LASTMETA=null;
-const BUILD="15 Nov 2026, update 1";
+const BUILD="15 Nov 2026, update 2";
 const clone=x=>JSON.parse(JSON.stringify(x));
 function defW(){return {regular:{ci:["07:00","09:00"],co:["16:00","18:00"]},day:{ci:["07:00","09:00"],co:["16:00","18:00"]},night:{ci:["16:00","18:00"],co:["07:00","09:00"]}};}
 function baseState(){const n=liveNow();return {v:3,user:null,reports:{},absence:{},recurring:{},drafts:{},codrafts:{},windows:defW(),mode:"test",test:{date:n.date,min:450},seedDate:n.date,clock:n,
