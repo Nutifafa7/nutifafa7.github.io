@@ -108,6 +108,8 @@ details summary{cursor:pointer;font-weight:600}
 .signin label{display:block}
 .signin .row{align-items:flex-end;gap:12px;flex-wrap:wrap}
 .signin #staffid{text-transform:uppercase;letter-spacing:.08em}
+.policy ul,.policy ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.policy p{margin:0}
 </style>
 </head>
 <body>
@@ -420,7 +422,7 @@ function rng(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a
 let S=null, MSG="", NET="";
 let DB=null, MODE="boot", READY={rep:false,cfg:false}, EMPTY=false, CANWRITE=null, DEFER=false, BUSY=false;
 let OKMSG="", SAVE="", LIMIT=false, FIRSTCFG=true, LASTREP=null, LASTMETA=null;
-const BUILD="14 Nov 2026, update 2";
+const BUILD="15 Nov 2026, update 1";
 const clone=x=>JSON.parse(JSON.stringify(x));
 function defW(){return {regular:{ci:["07:00","09:00"],co:["16:00","18:00"]},day:{ci:["07:00","09:00"],co:["16:00","18:00"]},night:{ci:["16:00","18:00"],co:["07:00","09:00"]}};}
 function baseState(){const n=liveNow();return {v:3,user:null,reports:{},absence:{},recurring:{},drafts:{},codrafts:{},windows:defW(),mode:"test",test:{date:n.date,min:450},seedDate:n.date,clock:n,
@@ -832,12 +834,12 @@ function render(){
   if(loading){h+='<main>'+banner+'<div class="card"><h2>Connecting to shared data</h2><p class="sub">This usually takes a few seconds.</p></div></main>';}
   else if(!u){h+='<main>'+banner+viewSignIn()+'</main>';}
   else{
-    const tabs=[["day","My day"],["history","My history"]];if(u.hod)tabs.push(["dept","My department"]);if(u.me)tabs.push(["me","M&E review desk"]);if(u.exec)tabs.push(["appr","Reports to rate"]);
+    const tabs=[["day","My day"],["history","My history"]];if(u.hod)tabs.push(["dept","My department"]);if(u.me)tabs.push(["me","M&E review desk"]);if(u.exec)tabs.push(["appr","Reports to rate"]);tabs.push(["policy","Policy"]);
     if(!tabs.some(t=>t[0]===S.ui.tab))S.ui.tab="day";
     h+='<div class="tabs" role="tablist">'+tabs.map(t=>'<button role="tab" data-a="tab" data-v="'+t[0]+'" aria-selected="'+(S.ui.tab===t[0])+'">'+t[1]+'</button>').join("")+'</div>';
     const wide=(S.ui.tab==="me"||S.ui.tab==="dept"||S.ui.tab==="appr");
     h+='<main class="'+(wide?"wide":"")+'">'+banner+alerts(u)+(MSG?'<div class="notice bad err" role="alert">'+esc(MSG)+'</div>':"")+(OKMSG?'<div class="notice good" role="status">'+esc(OKMSG)+'</div>':"")+
-      (S.ui.tab==="day"?viewDay(u):S.ui.tab==="history"?viewHistory(u):S.ui.tab==="dept"?viewDept(u):S.ui.tab==="appr"?viewAppr(u):viewME(u))+'</main>';
+      (S.ui.tab==="day"?viewDay(u):S.ui.tab==="history"?viewHistory(u):S.ui.tab==="dept"?viewDept(u):S.ui.tab==="appr"?viewAppr(u):S.ui.tab==="policy"?viewPolicy(u):viewME(u))+'</main>';
   }
   // sections a person opened (history, audit trail) stay open when the page refreshes itself
   const openD={};document.querySelectorAll("details[data-d]").forEach(function(e){openD[e.dataset.d]=e.open;});
@@ -868,6 +870,59 @@ function viewSignIn(){
   if(MODE==="remote"&&EMPTY&&!BUSY)h+='<div class="card"><h3>No data yet</h3><p>The shared store is empty. Load the demo reports to start testing.</p><div><button class="btn primary" data-a="reset">Load demo data</button></div></div>';
   h+='<p class="sub">'+(MODE==="remote"?"Entries are saved to a shared store. Every device signed in to this page sees them within seconds.":"Shared data is not available in this view, so entries stay in this browser only.")+' App version: '+BUILD+'.</p>';
   MSG="";return h;
+}
+
+/* ---------- policy note ---------- */
+function viewPolicy(u){
+  const W=S.windows||defW();
+  const wrow=function(k,label){const w=W[k]||defW()[k];return "<tr><td>"+label+"</td><td>"+fmtTime(w.ci[0])+" to "+fmtTime(w.ci[1])+"</td><td>"+fmtTime(w.co[0])+" to "+fmtTime(w.co[1])+(k==="night"?" (the next morning)":"")+"</td></tr>";};
+  const L=function(a){return "<ul>"+a.map(function(x){return "<li>"+x+"</li>";}).join("")+"</ul>";};
+  const card=function(t,sub,body){return "<div class='card policy'><header><h3>"+t+"</h3>"+(sub?"<span class='sub'>"+sub+"</span>":"")+"</header>"+body+"</div>";};
+  let h="<div class='card policy'><header><h2>The policy this app follows</h2><span class='sub'>App version: "+BUILD+"</span></header>"+
+    "<p>This app puts MAB International Hospital&rsquo;s <b>Daily Departmental Task Submission, Execution, Monitoring and Accountability Policy</b> into practice. Every staff member plans the day at check-in and reports the outcome at check-out. The Monitoring &amp; Evaluation (M&amp;E) department reviews, scores and reports on the results.</p>"+
+    "<p class='sub'>Where the app differs from the policy text, the difference is listed at the bottom of this page.</p></div>";
+  h+=card("When to report","Every day, inside a time window",
+    L(["Everyone reports every day, including weekends and public holidays. Administration is not expected to report on Saturdays and Sundays, but may still submit.",
+       "Nursing and Customer Service run a day shift (8am to 5pm) and a night shift (5pm to 8am). Administration and the Executive Director&rsquo;s Office work regular hours. Every other department uses the regular-hours windows.",
+       "M&amp;E can change the windows under Settings. The table shows what is set now."])+
+    "<div class='scroll'><table><thead><tr><th>Work pattern</th><th>Check-in</th><th>Check-out</th></tr></thead><tbody>"+wrow("regular","Regular hours (no shift)")+wrow("day","Day shift")+wrow("night","Night shift")+"</tbody></table></div>");
+  h+=card("Check-in and check-out","The morning plan and the evening outcome",
+    L(["<b>Check-in.</b> Each task needs a description, the deliverable expected, a priority, an expected completion time and a named assisting person (the same department is suggested first). Two confirmations must be ticked. A plan can be edited until the window closes, and every edit is recorded.",
+       "<b>During the day.</b> A task can be marked In progress. An unplanned task can be added and is labelled as such. If the person is unavailable, the assisting person or the head of department can take the task over, and the handover is recorded. A task taken over stays with the covering person until they record its outcome, even on the next day.",
+       "<b>Check-out.</b> Each task is marked Completed, Partially completed, Not completed or Deferred. Completed needs the time it was completed. Any other outcome needs a reason, whether the cause was inside or outside the department&rsquo;s control, and a corrective action. Deferred also needs a revised date, and the task then carries forward automatically."]));
+  h+=card("Late and missed submissions","How a closed window can be reopened",
+    L(["When a window has closed, the person can send one late request with a reason. A request that is waiting, decided or lapsed is not replaced.",
+       "M&amp;E decides: <b>approve as an exception</b> (no penalty), <b>allow late</b> (marked late), or <b>decline</b>. Every decision is logged with the reason, the approving officer and the time.",
+       "An approved form stays open until the end of the day after the approval. If it is still unused, the submission is recorded as missed and the day goes to review.",
+       "Nobody approves their own request. The M&amp;E Manager&rsquo;s requests go to another M&amp;E reviewing officer.",
+       "If nothing is submitted and the person is not on an excused absence, the day is recorded automatically as No check-in or No check-out."]));
+  h+=card("Scoring","100 points, six parts",
+    "<div class='scroll'><table><thead><tr><th>Part</th><th>Points</th><th>Who decides</th></tr></thead><tbody>"+
+    "<tr><td>Timeliness of the morning submission</td><td>15</td><td>The app: full marks if on time or an approved exception, otherwise 0</td></tr>"+
+    "<tr><td>Quality of the itinerary (plan)</td><td>15</td><td>The reviewer, rated 1 to 5</td></tr>"+
+    "<tr><td>Task execution and completion</td><td>35</td><td>The app: completed tasks count in full, partly completed tasks as half</td></tr>"+
+    "<tr><td>Quality of the check-out report</td><td>15</td><td>The reviewer, rated 1 to 5</td></tr>"+
+    "<tr><td>Evidence</td><td>10</td><td>The reviewer, rated 1 to 5</td></tr>"+
+    "<tr><td>Compliance (check-in and check-out on time)</td><td>10</td><td>The app: 5 for each, 2 if late, 0 if missed</td></tr>"+
+    "</tbody></table></div>"+
+    "<p>Ratings: 90 and above Excellent, 80 Very Good, 70 Good, 60 Satisfactory, 50 Needs Improvement, below 50 Unsatisfactory. A reviewer can excuse an unfinished task that was outside the department&rsquo;s control, and it then leaves the completion calculation.</p>"+
+    "<p class='sub'>The policy gives the weight of each part but not a formula. How the three automatic parts are worked out is the app&rsquo;s proposal and is awaiting confirmation by M&amp;E.</p>");
+  h+=card("Your score, feedback and reviews","Open My history to see your own",
+    L(["Every staff member sees their own score and the reviewer&rsquo;s written feedback. Other people&rsquo;s scores are visible to M&amp;E and management only.",
+       "A staff member can ask for a review of a score within two working days. The M&amp;E Manager answers. For the M&amp;E Manager&rsquo;s own score, the Executive Director&rsquo;s Office answers.",
+       "Nobody approves or rates their own submission. An M&amp;E officer&rsquo;s reports are rated by another M&amp;E officer. The M&amp;E Manager&rsquo;s reports are rated by the Executive Director&rsquo;s Office."]));
+  h+=card("Attendance and repeated non-compliance","Excused absences and the warning ladder",
+    L(["Excused absences are Approved leave, Authorised absence, Official assignment, Off duty and Technical failure. Unauthorised absence is not excused and counts as a missed day.",
+       "Heads of department record attendance for their staff, and M&amp;E can record a reason for any missed day. Nobody records their own: a head of department&rsquo;s attendance is recorded by M&amp;E, and an M&amp;E officer&rsquo;s by another M&amp;E officer.",
+       "Late or missed check-ins and late or missed check-outs are counted for each calendar month. The M&amp;E review desk shows the step the policy recommends: recorded warning, formal reminder, written warning, escalation to Management and HR, then formal disciplinary action. The app only displays the recommendation. It does not impose anything."]));
+  h+=card("Where the app differs from the policy text","Confirmed on 13 November 2026",
+    "<p>In five places the app&rsquo;s behaviour was kept, and the policy document would need amending to match:</p>"+
+    "<ol><li><b>Who reports.</b> The policy names heads of department and designated officers. The app has every staff member report.</li>"+
+    "<li><b>Who decides late requests.</b> The policy names the M&amp;E Manager or an authorised administrator. The app lets the M&amp;E Officer decide too.</li>"+
+    "<li><b>Check-out window.</b> The policy gives 4pm to 6pm in one place and says it closes at 4pm in another. The app uses 4pm to 6pm.</li>"+
+    "<li><b>Shifts.</b> The policy implies one schedule for everyone. The app has shift-specific windows.</li>"+
+    "<li><b>Reporting days.</b> The policy says each working day. The app counts every day, except Administration at weekends.</li></ol>");
+  return h;
 }
 
 /* ---------- my day ---------- */
